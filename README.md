@@ -1,8 +1,8 @@
 # DockScore 2.0 (DS2)
 
-**DockScore 2.0** is a protein–protein docking scoring function that combines an XGBoost ensemble with a Graph Neural Network (GNN) to rank structural decoys of protein complexes. It is the main computational backend of the [SODAPOP](https://sodapop.example.com) web server.
+**DockScore 2.0** is a protein–protein docking scoring function that combines an XGBoost ensemble with a Graph Neural Network (GNN) to rank structural decoys of protein complexes. It is the main computational backend of the [SODAPOP](https://sodapop.example.com) web server. The SODAPOP webserver also hosts a docking module through [LightDock](https://lightdock.org/) and an interface analysis module through [PPCheck](https://caps.ncbs.res.in/ppcheck/), thereby providing an end-to-end docking and scoring pipeline for users. 
 
-Given a receptor PDB, a ligand PDB, and a set of docked decoy structures (as a ZIP archive of PDB files), DS2 computes per-decoy quality scores and returns a ranked predictions CSV.
+Given a receptor PDB, a ligand PDB, and a set of docked decoy structures (as a ZIP archive of PDB files), DS2 predicts the CAPRI-quality of each decoy and returns a ranked predictions CSV for the decoys predicted as CAPRI-acceptable or better.
 
 ---
 
