@@ -1,0 +1,27 @@
+cat > /home/revathy/sodapop_web/scoring/DS2/.gitignore << 'EOF'
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+ds2_env/
+venv/
+env/
+
+# BLAST database files (large, users download their own)
+blast_backend/db/
+blast_backend/bin/
+
+# Temporary and output files
+*.log
+*.tmp
+temp/
+outputs/
+
+# OS files
+.DS_Store
+Thumbs.db
+EOF
+

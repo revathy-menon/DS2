@@ -1,0 +1,32 @@
+name: ds2
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Python
+  - python=3.12.3
+
+  # Core scientific stack (conda-managed for best binary compatibility)
+  - numpy=2.4.3
+  - pandas=3.0.1
+  - scipy=1.17.1
+  - networkx=3.6.1
+  - joblib=1.5.3
+
+  # PyTorch — installs CUDA-enabled build via the pytorch channel.
+  # For CPU-only use, replace with: pytorch::pytorch=2.10.0 cpuonly
+  - pytorch::pytorch=2.10.0
+  - pytorch::torchvision           # required by some torch-geometric internals
+
+  # Bioinformatics
+  - conda-forge::biopython=1.86
+  - bioconda::blast                # provides psiblast for PSSM generation
+
+  # pip-only packages (not on conda-forge at the required version)
+  - pip
+  - pip:
+    - torch-geometric==2.7.0
+    - xgboost==3.2.0
