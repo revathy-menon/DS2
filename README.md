@@ -126,8 +126,10 @@ python scripts/job_wrapper.py \
 ### Output
 
 Results are written to `<job-dir>/outputs/predictions.csv`. Columns include per-decoy scores from the XGBoost model, the GNN model, and the ensemble prediction.
+
 ---
-Example files are provided in the mock_media folder.
+### Examples / tests
+Files are provided in the mock_media folder.
 
 ---
 
