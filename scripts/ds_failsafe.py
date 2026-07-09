@@ -12,7 +12,6 @@ class SkipComplex(Exception):
     """Signal that this PDB should be skipped and the run should continue."""
     pass
 
-
 HYDROPHOBIC_RESIDUES = {"ALA", "VAL", "ILE", "LEU", "MET", "PHE", "TRP", "TYR"}
 POSITIVE_RESIDUES = {"LYS", "ARG", "HIS"}
 VDW_RADII = {"H": 1.2, "C": 1.7, "N": 1.55, "O": 1.52, "S": 1.8, "P": 1.8}
@@ -24,7 +23,7 @@ def identify_interface_residues(complex_pdb, cutoff=7.0):
 
     if len(chains) < 2:
         print(f"ERROR: Complex '{os.path.basename(complex_pdb)}' has less than 2 chains ({len(chains)}). Skipping.")
-        sys.exit(1) # Exit with a non-zero status code to signal a skip/failure
+        sys.exit(1) 
 
     chain1, chain2 = chains[0], chains[1]
 
@@ -98,8 +97,7 @@ def compute_spatial_clustering_per_monomer(interface_residues, cutoff=14.0):
 def compute_scores(decoy_data, use_positive_residue_score=False, use_equal_weights=False, included_parameters=None):
     df = pd.DataFrame(decoy_data)
 
-    # Normalize scores that require normalization
-    # Apply normalization conditionally to avoid issues if all values are the same (min == max)
+    # Applying normalization conditionally to avoid issues if all values are the same (min == max)
     df['Interface_SA_score'] = df.groupby('Complex')['Interface_SA'].transform(
         lambda x: (x - x.min()) / (x.max() - x.min()) if x.max() != x.min() else 0.0
     )
@@ -110,7 +108,7 @@ def compute_scores(decoy_data, use_positive_residue_score=False, use_equal_weigh
     df['Hydrophobicity_Score'] = (df['Hydrophobicity_Monomer1'] + df['Hydrophobicity_Monomer2']) / 2
     df['Clustering_Score'] = (df['Spatial_Clustering_Monomer1'] + df['Spatial_Clustering_Monomer2']) / 2
 
-    # Define base weights (modified to reflect the original)
+    # Define base weights (reflects the original DOCKSCORE algorithm)
     base_weights = {
         'Interface_SA_score': 0.20,
         'Short_Contacts_Score': 0.73,
@@ -136,11 +134,9 @@ def compute_scores(decoy_data, use_positive_residue_score=False, use_equal_weigh
                 score_components[key] = 0.0
     
     # Dynamically adjust weights if parameters cannot be computed
-    # This is where robustness for missing conservation comes in
     active_weights = score_components.copy()
     
     # If Conserved_Interface_Fraction was not computable (marked by -1.0)
-    # This logic assumes -1.0 means 'not computable'
     if 'Conserved_Interface_Fraction' in df.columns and (df['Conserved_Interface_Fraction'] == -1.0).all():
         print("DEBUG: Conserved_Interface_Fraction not computable for any decoy in this complex. Zeroing its weight.")
         active_weights['Conserved_Interface_Fraction'] = 0.0
@@ -192,7 +188,6 @@ def analyze_docked_complex(complex_pdb, unbound_pdbs, conserved_rec, conserved_l
     ]
     conserved_fraction = len(conserved_interface) / total_interface_residues if total_interface_residues else 0
     return {
-        # "Complex": os.path.basename(complex_pdb)[:4],
         "Complex": unbound_pdbs[0][:4],
         "Decoy": os.path.basename(complex_pdb),
         "Interface_Residues": unique_interface_residues,
@@ -205,15 +200,6 @@ def analyze_docked_complex(complex_pdb, unbound_pdbs, conserved_rec, conserved_l
         "Conserved_Interface_Fraction": conserved_fraction,
         "Positive_Residue_Score": positive_residue_score
     }
-# Inside main() function of ds_failsafe.py, when calling analyze_docked_complex
-# The chain check needs to happen for the *unbound* receptor and ligand PDBs
-# that are passed into analyze_docked_complex or even before that.
-# The current check within identify_interface_residues will only apply to the *docked* complex.
-# For the case you described ("a complex that has, say, less than 2 chains"),
-# this typically refers to the input structure (receptor/ligand) themselves.
-
-# Let's adjust the check to happen earlier, right after loading receptor and ligand paths in main().
-# We'll need a helper function.
 
 def check_num_chains(pdb_path):
     parser = PDB.PDBParser(QUIET=True)
@@ -237,22 +223,16 @@ def main():
 
     args = parser.parse_args()
 
-    # We use basicConfig so it pipes directly into the job_wrapper's job.log
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')   
     logger.info("Starting DS Failsafe processing...")
 
-    # 1. Prepare Unbound PDBs list required by your function
     unbound_pdbs = [args.receptor, args.ligand]
-
-    # 2. Load Conservation Data using your actual function
     logger.info("Loading conservation CSVs...")
     conserved_rec = load_conserved_residues(args.receptor_csv)
     conserved_lig = load_conserved_residues(args.ligand_csv)
 
     results = []
 
-    # 3. Safely Extract Decoys
     with tempfile.TemporaryDirectory() as temp_extract_dir:
         logger.info(f"Extracting decoys to temporary secure folder...")
         with zipfile.ZipFile(args.decoy_zip, 'r') as zip_ref:
@@ -266,7 +246,6 @@ def main():
 
         logger.info(f"Found {len(decoy_files)} decoys. Starting multiprocessing...")
 
-        # 4. Run the Science using your actual analyze_docked_complex function
         with ProcessPoolExecutor(max_workers=args.max_workers) as executor:
             futures = {
                 executor.submit(
@@ -284,13 +263,10 @@ def main():
                     if res:
                         results.append(res)
                 except Exception as e:
-                    # Log silently to avoid spamming the log if a single PDB is malformed
                     pass
 
-    # 5. Save Final Output
     if results:
         df_results = pd.DataFrame(results)
-        # Convert Lists/Sets to strings so it saves cleanly to TSV
         if 'Interface_Residues' in df_results.columns:
             df_results['Interface_Residues'] = df_results['Interface_Residues'].astype(str)
             
