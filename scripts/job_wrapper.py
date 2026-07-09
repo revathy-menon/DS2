@@ -17,7 +17,6 @@ def run_step(cmd, log_file, step_name):
 
 def main(args):
 
-    # --- 1. DYNAMIC JOB PATHS ---
     inputs_dir = os.path.join(args.job_dir, "inputs")
     temp_dir = os.path.join(args.job_dir, "temp")
     outputs_dir = os.path.join(args.job_dir, "outputs")
@@ -35,8 +34,7 @@ def main(args):
     ds_output_tsv = os.path.join(temp_dir, "ds_scores.tsv")
     graphs_dir = os.path.join(temp_dir, "graphs")
     final_output_csv = os.path.join(outputs_dir, "predictions.csv")
-
-    # --- 2. STATIC BACKEND PATHS ---
+-
     scripts_dir = os.path.join(args.backend_dir, "scripts")
     pssm_script = os.path.join(scripts_dir, "pssm_conservation.py")
     ds_script = os.path.join(scripts_dir, "ds_failsafe.py")
@@ -50,7 +48,6 @@ def main(args):
     gnn_model = os.path.join(args.backend_dir, "models", "gnn", "gnn_with_edge_model_v10.pt")
     ds2_python = os.path.join(args.backend_dir, "ds2_env", "bin", "python")
 
-    # Ensure output directories exist
     os.makedirs(temp_dir, exist_ok=True)
     os.makedirs(graphs_dir, exist_ok=True)
     os.makedirs(outputs_dir, exist_ok=True)
@@ -58,7 +55,6 @@ def main(args):
     with open(log_file, "a") as log:
         log.write(f"[{datetime.now()}] Initializing Job Wrapper Pipeline...\n")
 
-    # --- EXECUTE STAGE 1: PSSM Conservation ---
     cmd_pssm = [
         ds2_python, pssm_script,
         "--receptor", receptor_path,
@@ -69,11 +65,9 @@ def main(args):
     ]
     run_step(cmd_pssm, log_file, "PSSM Generation")
 
-    # Only continue if a decoy pool was provided
     if args.decoy_zip_name:
         decoy_zip_path = os.path.join(inputs_dir, args.decoy_zip_name)
         
-        # --- EXECUTE STAGE 2: DS Computation ---
         cmd_ds = [
             ds2_python, ds_script,
             "--receptor", receptor_path,
@@ -85,16 +79,14 @@ def main(args):
         ]
         run_step(cmd_ds, log_file, "DS Scoring")
 
-        # --- EXECUTE STAGE 3: Graph Generation ---
         cmd_graphs = [
-            ds2_python, graph_script,  # Using ds2_python instead of sys.executable
+            ds2_python, graph_script, 
             "--tsv", ds_output_tsv,
             "--outdir", graphs_dir,
-            "--decoy-zip", decoy_zip_path  # <-- This was missing!
+            "--decoy-zip", decoy_zip_path
         ]
         run_step(cmd_graphs, log_file, "Graph Generation")
 
-        # --- EXECUTE STAGE 4: ML Inference ---
         cmd_inference = [
             ds2_python, inference_script,
             "--tsv", ds_output_tsv,
@@ -112,7 +104,6 @@ def set_status(job_dir, status):
     """Best-effort update of the DS2Job status via Django ORM."""
     try:
         job_id = os.path.basename(job_dir)
-        # Bootstrap Django
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
         if project_root not in sys.path:
             sys.path.insert(0, project_root)
@@ -128,8 +119,7 @@ def set_status(job_dir, status):
 
 
 if __name__ == "__main__":
-    # Parse args early so we can access job_dir for status updates
-    parser = argparse.ArgumentParser(description="Master Wrapper for a Single DS2 Web Job")
+    parser = argparse.ArgumentParser(description="Wrapper for a Single DS2 Job")
     parser.add_argument("--job-dir", required=True)
     parser.add_argument("--backend-dir", required=True)
     parser.add_argument("--receptor-name", required=True)
