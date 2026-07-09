@@ -3,24 +3,17 @@ import subprocess
 from tqdm import tqdm
 from datetime import datetime
 
-# Set base paths
-project_dir = "/home/gendis/revathy"  # <-- Update this
+# setting up paths and folders first, these are my paths and folder names - rename/modify yours appropriately
+project_dir = "."  # <-- UPDATE THIS
 pdb_folder = os.path.join(project_dir, "pdbs/capri")
 blast_db = os.path.join(project_dir, "swissprot", "swissprot_db")  # Or whatever filename it has
 script_path = os.path.join(project_dir, "scripts", "pssm_conservation.py")
 output_dir = os.path.join(project_dir, "output_capri")
 log_dir = os.path.join(output_dir, "logs")
-#print(pdb_folder)
-#print(output_dir)
-#print(log_dir)
-#quit()
 os.makedirs(log_dir, exist_ok=True)
 
 # Gather PDB IDs
 all_files = os.listdir(pdb_folder)
-#base_ids = {f.split("_")[0] for f in all_files if f.endswith(("_A.pdb", "_B.pdb"))}
-# base_ids = {f.split("_")[0] for f in all_files if f.endswith((".pdb"))}
-# base_ids = {f.split("_")[0] for f in all_files if f.endswith(("_r_b.pdb", "_l_b.pdb"))}
 base_ids = {f.split("_")[0] for f in all_files if f.endswith(("_r_u.pdb", "_l_u.pdb"))}
 base_ids = sorted(base_ids)
 
