@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """
-run_blind_inference.py
-Production-ready Physics-Aware Cascade for Blind Predictions.
-Requires NO ground truth labels (DockQ/Fnat). 
-Takes in physical features, filters with XGBoost (0.5), and ranks with 4D GNN.
+Requires NO ground truth labels (DockQ/Fnat). Takes in physical features, filters with XGBoost (0.5), and ranks with GNN.
 """
 
 import os
@@ -21,7 +18,6 @@ import torch
 from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 
-# --- SAFE GNN IMPORT FOR WEB SERVER ---
 # We find the architecture folder relative to this script's location
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DS2_DIR = os.path.dirname(SCRIPT_DIR) # Go up one level to DS2
@@ -71,10 +67,10 @@ def run_pipeline(input_file, graph_dir, out_dir, xgb_path, gnn_path):
     
     xgb_model = joblib.load(xgb_path)
     
-    # 1. Provide the exact probability score
+    # Provide the exact probability score
     df['XGBoost_Probability'] = xgb_model.predict_proba(X)[:, 1]
     
-    # 2. Provide the scientific classification based on the 0.5 threshold
+    # Provide the CAPRI quality classification based on the 0.5 threshold
     df['CAPRI_Quality_Prediction'] = np.where(
         df['XGBoost_Probability'] >= 0.5, 
         'Predicted Acceptable+', 
@@ -85,7 +81,7 @@ def run_pipeline(input_file, graph_dir, out_dir, xgb_path, gnn_path):
     failed = df[df['XGBoost_Probability'] < 0.5].copy()
 
     # ---------------------------------------------------------
-    # STAGE 2: 4D Physics GNN Re-Ranking
+    # STAGE 2: GNN Re-Ranking
     # ---------------------------------------------------------
     print(f"\n--- STAGE 2: GNN Re-Ranking ---")
     
@@ -150,11 +146,9 @@ def run_pipeline(input_file, graph_dir, out_dir, xgb_path, gnn_path):
     output_cols = [col for col in output_cols if col in final_df.columns]
     
     out_csv = os.path.join(out_dir, 'blind_predictions.csv')
-    
-    # Save with 4 decimal places for clean UI presentation
     final_df[output_cols].to_csv(out_csv, index=False, float_format='%.4f')
     
-    print(f"\n✅ Blind Inference Complete! Predictions saved to: {out_csv}")
+    print(f"\n SCoring complete. Predictions saved to: {out_csv}")
 
 def main():
     parser = argparse.ArgumentParser(description="Run Blind Inference (XGBoost + GNN)")
@@ -166,10 +160,8 @@ def main():
     
     args = parser.parse_args()
 
-    # Get the output directory expected by the job wrapper
     out_dir = os.path.dirname(args.output)
-    
-    # Call your actual unified pipeline function!
+
     run_pipeline(
         input_file=args.tsv,
         graph_dir=args.graph_dir,
@@ -178,9 +170,6 @@ def main():
         gnn_path=args.gnn_model
     )
     
-    # Your run_pipeline saves the file as 'blind_predictions.csv'. 
-    # The Django wrapper expects it to be named exactly what was passed in args.output.
-    # We will rename it quickly to ensure Django finds it.
     import shutil
     default_out = os.path.join(out_dir, 'blind_predictions.csv')
     if os.path.exists(default_out) and default_out != args.output:
